@@ -81,7 +81,7 @@ use nom::multi::separated_list1;
 use nom::IResult;
 use parsers::{alphanums, hyphenated_alphanums, unsigned};
 #[cfg(feature = "serde")]
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
 use std::cmp::Ordering::{Equal, Greater, Less};
 use std::hash::{Hash, Hasher};
@@ -1725,6 +1725,32 @@ impl Requirement {
         let s: String = Deserialize::deserialize(deserializer)?;
 
         s.parse().map_err(D::Error::custom)
+    }
+
+
+    #[cfg(feature = "serde")]
+    /// Function suitable for use as a custom serde serializer for
+    /// the Requirment struct.
+    ///
+    /// ```rust
+    /// use versions::Requirement;
+    /// use serde::Deserialize;
+    /// use serde_json::from_str;
+    ///
+    /// #[derive(Deserialize)]
+    /// struct Foo {
+    ///    #[serde(serialize_with = "Requirement::serialize")]
+    ///    requirement: Requirement,
+    ///    // ...
+    /// }
+    /// ```
+
+    pub fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s: String = format!("{}", self);
+        serializer.serialize_str(&s)
     }
 }
 
